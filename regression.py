@@ -1,12 +1,17 @@
 import pandas as pd 
-import quandl,math
+import quandl,math, datetime
 import numpy as np
 from sklearn import preprocessing , cross_validation, svm
 from sklearn.linear_model import  LinearRegression 
+import matplotlib.pyplot as plt
+from matplotlib import style
 #lib allows to use arrays etc.
 #preprocessing is used for scaling and normalising etc
 #cross_validation is used for shuffling data for training and testing
 #svm - support vector mechines
+#matplotlib is a library for plotting graphs in python 
+
+style.use('ggplot')
 
 df=quandl.get('WIKI/GOOGL')
 
@@ -33,19 +38,31 @@ print(forecast_out)
 #suppose it is 30 then the prediction will be for 30 days in future 
 
 df['label']=df[forecast_col].shift(-forecast_out)
-df.dropna(inplace=True)
-print(df.tail())
+#this sets the label column values as the values of the forecast_col after shifting the forecast_col values by forecast_out
+#i.e. the value of label for day 0 will be set as the forecast_col value of forecast_out days
+
+# print(df.tail())
+#prints the last 5 sets of data
 
 x=np.array(df.drop(['label'],1))  
 #features are everything except the lable column
+x=preprocessing.scale(x)
+#this is to normalize/scale all the parameters
+x_lately=x[-forecast_out:]
+#this is the stuff we are basically going to predict against
+#this is the part of X which now has the forecast_col values null after -forecast_out
+x=x[:-forecast_out]
+#x and x_lately are now to mutually disjoint arrays
+#its scaling the data, all the data
+
+df.dropna(inplace=True)
+#returns dropped dataframes
+#most probably the work it is doing is omiting the data sets that have been vacated dur to the shifting in the step above
+
 y=np.array(df['label'])
 #its only the label column
-x=preprocessing.scale(x)
-#its scaling the data, all the data 
 y=np.array(df['label'])
-
-print(len(x),len(y))
-
+  
 X_train,X_test,Y_train,Y_test=cross_validation.train_test_split(x,y,test_size=0.2)
 #what is does is basically take all the features and labels and shuffle them up slect test_size % for test cases and 
 #the remaining 100-test_case % as the training data
@@ -69,3 +86,32 @@ accuracy=clf.score(X_test,Y_test)
 #the results will be erroneously good 
 
 print(accuracy)
+
+forecast_set=clf.predict(x_lately)
+#we can pass a single or an array of values for which the prediction is to be made
+
+print(forecast_set,accuracy,forecast_out)
+#these are the next 30 days of predicted unknown values 
+
+df['Forecast']=np.nan 
+#this is a new column filled initially with nan i.e. null values 
+
+last_date=df.iloc[-1].name
+last_unix=last_date.timestamp()
+one_day=86400
+next_unix=last_unix + one_day
+#purely integet-location based indexing for selection by position 
+for i in forecast_set:
+	next_date=datetime.datetime.fromtimestamp(next_unix)
+	next_unix+=one_day
+	df.loc[next_date]=[np.nan for _ in range(len(df.columns)-1)]+[i]
+	#.loc is accessing the index  
+#the above segment of code is basically for indexing the axes with proper values 
+
+df['Adj. Close'].plot()
+df['Forecast'].plot()
+#plotting the Closing prices and the forcasts in the same plot
+plt.xlabel('Date')
+plt.ylabel('Price')
+plt.show()  	
+
