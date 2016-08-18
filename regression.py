@@ -5,11 +5,17 @@ from sklearn import preprocessing , cross_validation, svm
 from sklearn.linear_model import  LinearRegression 
 import matplotlib.pyplot as plt
 from matplotlib import style
+import pickle
+
 #lib allows to use arrays etc.
 #preprocessing is used for scaling and normalising etc
 #cross_validation is used for shuffling data for training and testing
 #svm - support vector mechines
 #matplotlib is a library for plotting graphs in python 
+
+#pickling :- serialisation of any python object
+#in our case it can be classifiers or a whole bunch of other things
+#the purpose of saving a classifier is to save the time of retraining everytime before usinng 
 
 style.use('ggplot')
 
@@ -61,17 +67,23 @@ df.dropna(inplace=True)
 
 y=np.array(df['label'])
 #its only the label column
-y=np.array(df['label'])
   
 X_train,X_test,Y_train,Y_test=cross_validation.train_test_split(x,y,test_size=0.2)
 #what is does is basically take all the features and labels and shuffle them up slect test_size % for test cases and 
 #the remaining 100-test_case % as the training data
 
 clf=LinearRegression() 
-#clf=LinearRegression(n_jobs=10)
+#clf=LinearRegression(n_jobs=-1)
 #n_jobs= something will pass the number of threads we want to use while learning,
 #-1 being the argument suggesting to use tha maximum numbers of threads that can be created in the computer 
 #this makes the learning process a lot faster 
+
+
+with open('LinearRegression.pickle','wb') as f:
+	pickle.dump(clf,f)
+
+pickle_in=open('LinearRegression.pickle','rb')
+clf=pickle.load(pickle_in)
 
 # clf=svm.SVR(kernel='poly')
 #this will change the classifier to a SVM with a polynomial kernel
